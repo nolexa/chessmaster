@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chessmaster Openings</title>
+</head>
+<body>
+  <header class="topbar">
+    <h1>Chessmaster <span>Openings</span></h1>
+    <div class="side-toggle" role="tablist" aria-label="Mode">
+      <button role="tab" data-mode="learn" class="mode-btn">Learn</button>
+      <button role="tab" data-mode="quiz" class="mode-btn">Quiz</button>
+    </div>
+    <div class="side-toggle" role="tablist" aria-label="Play as">
+      <button role="tab" data-side="w" class="side-btn"><span class="dot white"></span>White</button>
+      <button role="tab" data-side="b" class="side-btn"><span class="dot black"></span>Black</button>
+    </div>
+  </header>
+
+  <main id="learn-view" class="layout">
+    <aside class="panel picker">
+      <h2>Openings</h2>
+      <ul id="openings" class="list"></ul>
+      <h2>Variations</h2>
+      <ul id="variations" class="list"></ul>
+    </aside>
+
+    <section class="board-area">
+      <div class="board-head">
+        <div>
+          <div id="opening-title" class="opening-title"></div>
+          <div id="variation-title" class="variation-title"></div>
+        </div>
+        <div id="status" class="status"></div>
+      </div>
+      <div id="board" class="board" aria-label="Chess board"></div>
+      <div class="controls">
+        <button id="btn-start" title="Start (Home)" aria-label="Start">⏮</button>
+        <button id="btn-prev" title="Previous (←)" aria-label="Previous move">◀</button>
+        <button id="btn-play" class="primary" title="Play / pause (Space)" aria-label="Play">▶ Play</button>
+        <button id="btn-next" title="Next (→)" aria-label="Next move">▶</button>
+        <button id="btn-end" title="End (End)" aria-label="End">⏭</button>
+        <button id="btn-flip" title="Flip board (F)" aria-label="Flip board">⇅</button>
+        <label class="speed">Speed
+          <select id="speed">
+            <option value="1800">Slow</option>
+            <option value="1100" selected>Normal</option>
+            <option value="600">Fast</option>
+          </select>
+        </label>
+      </div>
+      <div class="progress"><div id="progress-bar"></div></div>
+    </section>
+
+    <aside class="panel info">
+      <h2>About this opening</h2>
+      <p id="summary" class="summary"></p>
+      <h2>Key idea</h2>
+      <p id="idea" class="idea"></p>
+      <h2>Moves <small class="legend"><span class="you-swatch"></span>your moves</small></h2>
+      <ol id="movelist" class="movelist"></ol>
+    </aside>
+  </main>
+
+  <main id="quiz-view" class="layout" hidden>
+    <aside class="panel">
+      <h2>Quiz on</h2>
+      <select id="quiz-scope" class="scope-select" aria-label="Openings to quiz on"></select>
+      <h2>Your score <button id="quiz-reset" class="link-btn" type="button">Reset</button></h2>
+      <div id="quiz-stats" class="stats"></div>
+      <h2>How it works</h2>
+      <p class="muted small">A book line is played until your opponent leaves the book with a different move, often an
+        inaccuracy or a mistake. Find the best reply by moving a piece on the board. Stockfish judges your answer.</p>
+      <p class="muted small">Keys: <kbd>H</kbd> hint · <kbd>N</kbd> next quiz · <kbd>←</kbd> <kbd>→</kbd> step through an engine line</p>
+    </aside>
+
+    <section class="board-area">
+      <div class="board-head">
+        <div>
+          <div id="quiz-title" class="opening-title"></div>
+          <div id="quiz-subtitle" class="variation-title"></div>
+        </div>
+        <div id="quiz-status" class="status"></div>
+      </div>
+      <div class="board-wrap">
+        <div id="quiz-board" class="board" aria-label="Quiz board"></div>
+        <div id="quiz-overlay" class="board-overlay" hidden>
+          <div class="spinner" aria-hidden="true"></div>
+          <div id="quiz-overlay-text"></div>
+        </div>
+      </div>
+      <div class="controls">
+        <button id="quiz-hint" type="button" title="Hint (H)">💡 Hint</button>
+        <button id="quiz-retry" type="button" hidden>↺ Try again</button>
+        <button id="quiz-solution" type="button">Show solution</button>
+        <button id="quiz-next" type="button" title="Next quiz (N)">Next quiz →</button>
+      </div>
+    </section>
+
+    <aside class="panel info">
+      <h2>The position</h2>
+      <div id="quiz-prompt" class="prompt"></div>
+      <div id="quiz-feedback" class="feedback" hidden aria-live="polite"></div>
+      <section id="quiz-answers" hidden>
+        <h2>Engine's best replies</h2>
+        <ol id="quiz-answer-list" class="answers"></ol>
+      </section>
+      <details id="quiz-rating-help" class="rating-help" hidden>
+        <summary>How answers are rated</summary>
+        <p class="small">Stockfish evaluates the position after your move and compares it with its own best move.
+          Evaluations are in <strong>pawns</strong>, from your side: <span class="eval">+1.0</span> means you are
+          about a pawn ahead (or have an advantage worth that much), <span class="eval">−1.0</span> means your
+          opponent is. A knight or bishop is worth about 3 pawns, a rook 5, a queen 9.
+          <span class="eval">M3</span> means a forced mate in 3.</p>
+        <p class="small">Your move is rated by how much of the advantage it gives away compared with the best move:</p>
+        <ul id="quiz-rating-list" class="rating-list"></ul>
+        <p class="small muted">Only your first attempt counts towards your score. ✓ grades count as solved.</p>
+      </details>
+    </aside>
+  </main>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+{
+  "name": "chessmaster",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Learn chess openings: pick a side, an opening and a variation, and watch the line play out.",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "predev": "node scripts/copy-engine.mjs",
+    "dev": "vite",
+    "prebuild": "node scripts/copy-engine.mjs",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.1",
+    "vitest": "^5.0.3"
+  },
+  "dependencies": {
+    "stockfish": "^19.0.0"
+  }
+}

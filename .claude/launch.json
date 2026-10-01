@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "chessmaster",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-lc", "source \"$HOME/.nvm/nvm.sh\" >/dev/null 2>&1; nvm use >/dev/null 2>&1; npm run dev -- --strictPort"],
+      "port": 8765
+    }
+  ]
+}
