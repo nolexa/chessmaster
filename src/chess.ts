@@ -402,3 +402,45 @@ export const positionKey = (pos: Position): string => toFen(pos).split(' ').slic
 
 /** Move number prefix for SAN display: "4." for White, "4…" for Black. */
 export const moveNumber = (pos: Position): string => `${pos.fullmove}${pos.turn === 'w' ? '.' : '…'}`;
+
+// ── Game end ───────────────────────────────────────────────────────────
+
+export type GameResult = '1-0' | '0-1' | '1/2-1/2';
+export type GameEndReason = 'checkmate' | 'stalemate' | 'repetition' | 'fifty-move' | 'insufficient-material';
+
+export interface GameEnd {
+  result: GameResult;
+  reason: GameEndReason;
+}
+
+/** Neither side can possibly checkmate: K v K, K+minor v K, or only same-coloured bishops. */
+export function insufficientMaterial(pos: Position): boolean {
+  const others = pos.board
+    .map((p, sq) => ({ p, sq }))
+    .filter((x): x is { p: Piece; sq: number } => !!x.p && typeOf(x.p) !== 'K');
+  if (others.length === 0) return true;
+  if (others.length === 1) return typeOf(others[0].p) === 'N' || typeOf(others[0].p) === 'B';
+  if (others.every((x) => typeOf(x.p) === 'B')) {
+    const colours = new Set(others.map((x) => (fileOf(x.sq) + rankOf(x.sq)) % 2));
+    return colours.size === 1;
+  }
+  return false;
+}
+
+/**
+ * Whether the game is over after the last position in `history` (every position
+ * of the game so far, oldest first, including the initial one).
+ */
+export function gameEnd(history: Position[]): GameEnd | null {
+  const pos = history[history.length - 1];
+  if (!legalMoves(pos).length) {
+    return inCheck(pos)
+      ? { result: pos.turn === 'w' ? '0-1' : '1-0', reason: 'checkmate' }
+      : { result: '1/2-1/2', reason: 'stalemate' };
+  }
+  if (insufficientMaterial(pos)) return { result: '1/2-1/2', reason: 'insufficient-material' };
+  if (pos.halfmove >= 100) return { result: '1/2-1/2', reason: 'fifty-move' };
+  const key = positionKey(pos);
+  if (history.filter((p) => positionKey(p) === key).length >= 3) return { result: '1/2-1/2', reason: 'repetition' };
+  return null;
+}

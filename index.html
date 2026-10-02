@@ -11,6 +11,7 @@
     <div class="side-toggle" role="tablist" aria-label="Mode">
       <button role="tab" data-mode="learn" class="mode-btn">Learn</button>
       <button role="tab" data-mode="quiz" class="mode-btn">Quiz</button>
+      <button role="tab" data-mode="play" class="mode-btn">Play</button>
     </div>
     <div class="side-toggle" role="tablist" aria-label="Play as">
       <button role="tab" data-side="w" class="side-btn"><span class="dot white"></span>White</button>
@@ -117,6 +118,48 @@
         <ul id="quiz-rating-list" class="rating-list"></ul>
         <p class="small muted">Only your first attempt counts towards your score. ✓ grades count as solved.</p>
       </details>
+    </aside>
+  </main>
+
+  <main id="play-view" class="layout" hidden>
+    <aside class="panel">
+      <h2>Opening</h2>
+      <select id="play-opening" class="scope-select" aria-label="Opening the engine plays"></select>
+      <h2>Variation</h2>
+      <select id="play-variation" class="scope-select" aria-label="Variation"></select>
+      <h2>Engine strength</h2>
+      <input id="play-elo" class="elo-slider" type="range" step="10" aria-label="Engine strength (Elo)">
+      <div class="elo-readout"><strong id="play-elo-value"></strong> Elo · <span id="play-elo-label"></span></div>
+      <button id="play-new" class="wide-btn" type="button">New game</button>
+      <h2>Your record <button id="play-reset" class="link-btn" type="button">Reset</button></h2>
+      <div id="play-record" class="stats stats-3"></div>
+      <p class="muted small">The engine follows the opening's book lines while you do, choosing a random variation
+        unless you pick one. Once the game leaves the book, it plays on its own at the selected strength.</p>
+    </aside>
+
+    <section class="board-area">
+      <div class="board-head">
+        <div>
+          <div id="play-title" class="opening-title"></div>
+          <div id="play-subtitle" class="variation-title"></div>
+        </div>
+        <div id="play-status" class="status"></div>
+      </div>
+      <div id="play-board" class="board" aria-label="Game board"></div>
+      <div class="controls">
+        <button id="play-takeback" type="button" title="Take back your last move">↶ Take back</button>
+        <button id="play-resign" type="button">⚑ Resign</button>
+        <button id="play-flip" type="button" title="Flip board" aria-label="Flip board">⇅</button>
+        <label class="toggle"><input id="play-show-book" type="checkbox"> Show book moves</label>
+      </div>
+    </section>
+
+    <aside class="panel info">
+      <div id="play-result" class="feedback" hidden aria-live="polite"></div>
+      <h2>Book</h2>
+      <div id="play-book" class="book-status" aria-live="polite"></div>
+      <h2>Moves <small class="legend"><span class="book-swatch"></span>book move</small></h2>
+      <ol id="play-moves" class="movelist play-moves"></ol>
     </aside>
   </main>
 

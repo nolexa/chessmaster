@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fromFen, initial, legalMoves, makeMove, parseSan, parseUci, replay, squareIndex, toFen, toSan, uciLineToSan } from '../src/chess';
+import { fromFen, gameEnd, initial, insufficientMaterial, legalMoves, makeMove, parseSan, parseUci, replay, squareIndex, toFen, toSan, uciLineToSan } from '../src/chess';
 
 const moves = (line: string) => line.split(' ');
 
@@ -108,5 +108,34 @@ describe('notation', () => {
     const pos = fromFen('8/P3k3/8/8/8/8/8/4K3 w - - 0 1');
     expect(() => parseSan(pos, 'a8')).toThrow(/Illegal/);
     expect(toSan(pos, parseSan(pos, 'a8=N'))).toBe('a8=N');
+  });
+});
+
+describe('game end', () => {
+  const history = (line: string) => replay(line ? moves(line) : []).positions;
+
+  it('detects checkmate and who won', () => {
+    expect(gameEnd(history('f3 e5 g4 Qh4#'))).toEqual({ result: '0-1', reason: 'checkmate' });
+    expect(gameEnd(history('e4 e5 Bc4 Nc6 Qh5 Nf6 Qxf7#'))).toEqual({ result: '1-0', reason: 'checkmate' });
+  });
+
+  it('detects stalemate', () => {
+    expect(gameEnd([fromFen('7k/5Q2/6K1/8/8/8/8/8 b - - 0 1')])).toEqual({ result: '1/2-1/2', reason: 'stalemate' });
+  });
+
+  it('detects threefold repetition', () => {
+    const shuffle = 'Nf3 Nf6 Ng1 Ng8 Nf3 Nf6 Ng1 Ng8';
+    expect(gameEnd(history(shuffle.split(' ').slice(0, 7).join(' ')))).toBeNull();
+    expect(gameEnd(history(shuffle))).toEqual({ result: '1/2-1/2', reason: 'repetition' });
+  });
+
+  it('detects the fifty-move rule and insufficient material', () => {
+    expect(gameEnd([fromFen('4k3/8/8/8/8/8/4P3/4K3 w - - 100 80')])).toEqual({ result: '1/2-1/2', reason: 'fifty-move' });
+    expect(gameEnd([fromFen('4k3/8/8/8/8/8/8/4KN2 w - - 0 1')])).toEqual({ result: '1/2-1/2', reason: 'insufficient-material' });
+    // f1 and c4 are both light squares; c5 is dark.
+    expect(insufficientMaterial(fromFen('4k3/8/8/8/2b5/8/8/4KB2 w - - 0 1'))).toBe(true);
+    expect(insufficientMaterial(fromFen('4k3/8/8/2b5/8/8/8/4KB2 w - - 0 1'))).toBe(false);
+    expect(insufficientMaterial(fromFen('4k3/8/8/8/8/8/8/4KR2 w - - 0 1'))).toBe(false);
+    expect(gameEnd(history(''))).toBeNull();
   });
 });

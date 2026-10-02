@@ -13,11 +13,25 @@ export interface PvLine {
 }
 
 export interface AnalyseOptions {
-  depth: number;
+  /** Search to this depth... */
+  depth?: number;
+  /** ...or for this many milliseconds. */
+  movetime?: number;
   /** How many candidate moves to return (best first). */
   multiPv?: number;
   /** Restrict the search to these UCI moves. */
   searchMoves?: string[];
+  /** Play at roughly this Elo (see ELO_RANGE); omit for full strength. */
+  elo?: number;
+}
+
+/** The Elo range Stockfish's UCI_LimitStrength is calibrated for. */
+export const ELO_RANGE = { min: 1320, max: 3190 } as const;
+
+interface SearchResult {
+  lines: PvLine[];
+  /** The move the engine chose; with a strength limit this may differ from lines[0]. */
+  bestmove: string | null;
 }
 
 /** Anything that speaks UCI line by line: a Web Worker, or Stockfish under Node. */
@@ -90,10 +104,25 @@ export class Engine {
   }
 
   /** Analyse a FEN position; lines are sorted best first. */
-  analyse(fen: string, { depth, multiPv = 1, searchMoves }: AnalyseOptions): Promise<PvLine[]> {
-    const run = async () => {
+  async analyse(fen: string, options: AnalyseOptions): Promise<PvLine[]> {
+    return (await this.search(fen, options)).lines;
+  }
+
+  /** The move the engine would play (UCI), or null if there is none (mate/stalemate). */
+  async bestMove(fen: string, options: AnalyseOptions): Promise<string | null> {
+    return (await this.search(fen, options)).bestmove;
+  }
+
+  private search(fen: string, { depth, movetime, multiPv = 1, searchMoves, elo }: AnalyseOptions): Promise<SearchResult> {
+    const run = async (): Promise<SearchResult> => {
       await this.ready;
       const lines = new Map<number, PvLine>();
+      // Set the strength on every request, so a limited game never weakens an analysis.
+      this.transport.send(`setoption name UCI_LimitStrength value ${elo !== undefined}`);
+      if (elo !== undefined) {
+        const clamped = Math.round(Math.min(ELO_RANGE.max, Math.max(ELO_RANGE.min, elo)));
+        this.transport.send(`setoption name UCI_Elo value ${clamped}`);
+      }
       this.transport.send(`setoption name MultiPV value ${multiPv}`);
       this.transport.send(`position fen ${fen}`);
       const done = this.waitFor(
@@ -103,10 +132,14 @@ export class Engine {
           if (info) lines.set(info.rank, info);
         },
       );
+      const limit = movetime !== undefined ? `movetime ${movetime}` : `depth ${depth ?? 12}`;
       const restrict = searchMoves?.length ? ` searchmoves ${searchMoves.join(' ')}` : '';
-      this.transport.send(`go depth ${depth}${restrict}`);
-      await done;
-      return [...lines.values()].sort((a, b) => a.rank - b.rank);
+      this.transport.send(`go ${limit}${restrict}`);
+      const best = (await done).split(/\s+/)[1];
+      return {
+        lines: [...lines.values()].sort((a, b) => a.rank - b.rank),
+        bestmove: best && best !== '(none)' ? best : null,
+      };
     };
     const result = this.queue.then(run, run);
     this.queue = result.catch(() => undefined);
@@ -114,16 +147,22 @@ export class Engine {
   }
 }
 
-let browserEngine: Engine | null = null;
+const browserEngines = new Map<string, Engine>();
 
-/** Shared Stockfish instance running in a Web Worker (files served from /engine). */
-export function getBrowserEngine(): Engine {
-  if (!browserEngine) {
+/**
+ * A Stockfish instance running in its own Web Worker (files served from /engine).
+ * Separate names get separate engines, so e.g. a game is never queued behind a
+ * quiz being prepared in the background.
+ */
+export function getBrowserEngine(name = 'default'): Engine {
+  let engine = browserEngines.get(name);
+  if (!engine) {
     const worker = new Worker(`${import.meta.env.BASE_URL}engine/stockfish-19-lite-single.js`);
-    browserEngine = new Engine({
+    engine = new Engine({
       send: (cmd) => worker.postMessage(cmd),
       onLine: (listener) => worker.addEventListener('message', (e: MessageEvent<string>) => listener(String(e.data))),
     });
+    browserEngines.set(name, engine);
   }
-  return browserEngine;
+  return engine;
 }

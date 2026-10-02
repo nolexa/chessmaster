@@ -9,6 +9,12 @@ played until the opponent deviates with a different (often inferior) move, and
 you have to find the best reply on the board. [Stockfish](https://stockfishchess.org)
 picks realistic deviations and judges your answer.
 
+**Play mode** is a game against Stockfish at a strength you choose (1320 to
+3190 Elo). The engine plays the selected opening's book moves, picking a random
+variation unless you choose one, so you can practise every variant. If you
+leave the book, it tells you which book moves were available; once the book
+runs out, the engine plays on its own.
+
 Built with TypeScript and [Vite](https://vite.dev), tested with
 [Vitest](https://vitest.dev).
 
@@ -47,8 +53,8 @@ Then open http://localhost:8765.
 In quiz mode, click or drag a piece to answer. `H` shows a hint and `N` starts
 the next quiz.
 
-Selections are stored in the URL hash (e.g. `#black/sicilian/2` or
-`#quiz/white/italian`), so you can bookmark or share them.
+Selections are stored in the URL hash (e.g. `#black/sicilian/2`,
+`#quiz/white/italian` or `#play/black/french/0`), so you can bookmark or share them.
 
 ## How quizzes work
 
@@ -71,6 +77,20 @@ and in material) your move gave away, and the evaluation before and after.
 Your score is kept in the browser's local storage. Only your first attempt at
 each quiz counts.
 
+## How play mode works
+
+- The engine's book is the chosen opening's variations (or just one of them),
+  indexed by position so transpositions count. At each branch the engine picks
+  a book move in proportion to the variations that play it.
+- Your book moves are shown in blue in the move list. "Show book moves" draws
+  arrows for the book moves available to you.
+- Outside the book, Stockfish plays with `UCI_LimitStrength` at the selected
+  Elo, the range the engine is calibrated for. A separate engine instance is
+  used, so games are never slowed by quiz preparation.
+- Games end on checkmate, stalemate, threefold repetition, the fifty-move rule,
+  insufficient material, or resignation. Your win/draw/loss record and the
+  chosen strength are kept in local storage.
+
 ## Project layout
 
 - `src/chess.ts`: rules engine: legal moves, SAN/UCI/FEN, replaying book lines
@@ -81,6 +101,8 @@ each quiz counts.
 - `src/quiz.ts`: quiz generation and grading (UI-independent, tested against the real engine)
 - `src/quiz-view.ts`: quiz mode UI and score tracking
 - `src/line-player.ts`: plays engine lines move by move on the board
+- `src/play.ts`: play mode logic: opening book, book move choice, results (UI-independent)
+- `src/play-view.ts`: play mode UI: game flow, take-back, resign, record
 - `src/main.ts`: header and URL routing between the two modes
 - `scripts/copy-engine.mjs`: copies the Stockfish WASM build to `public/engine` (runs before `dev`/`build`)
 - `src/styles.css`: styles, including dark mode
