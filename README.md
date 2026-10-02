@@ -1,5 +1,7 @@
 # Chessmaster Openings
 
+**Try it online: [learn-openings.pages.dev](https://learn-openings.pages.dev)**
+
 A web app for learning chess openings. Pick a side (White or Black), choose an
 opening and a variation, and watch the line play out on the board. Every opening
 comes with a summary and the key idea behind each variation.
