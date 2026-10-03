@@ -4,6 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Chessmaster Openings</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 </head>
 <body>
   <header class="topbar">
@@ -156,10 +159,24 @@
 
     <aside class="panel info">
       <div id="play-result" class="feedback" hidden aria-live="polite"></div>
+      <h2>Your play</h2>
+      <div id="play-accuracy" class="accuracy"></div>
+      <div id="play-comment" class="feedback comment" hidden aria-live="polite"></div>
       <h2>Book</h2>
       <div id="play-book" class="book-status" aria-live="polite"></div>
       <h2>Moves <small class="legend"><span class="book-swatch"></span>book move</small></h2>
       <ol id="play-moves" class="movelist play-moves"></ol>
+      <p class="muted small">Click one of your moves to see its comment and the best move on the board.</p>
+      <div class="pgn-actions">
+        <button id="play-copy-pgn" class="step-btn" type="button">Copy PGN</button>
+        <button id="play-download-pgn" class="step-btn" type="button">Download PGN</button>
+      </div>
+      <dialog id="play-pgn-dialog" class="pgn-dialog" aria-labelledby="play-pgn-title">
+        <h2 id="play-pgn-title">Game record (PGN)</h2>
+        <p class="small muted">Copying to the clipboard isn't available here. Select the text and copy it.</p>
+        <textarea id="play-pgn-text" readonly rows="12"></textarea>
+        <button id="play-pgn-close" class="wide-btn" type="button">Close</button>
+      </dialog>
     </aside>
   </main>
 

@@ -15,7 +15,9 @@ picks realistic deviations and judges your answer.
 3190 Elo). The engine plays the selected opening's book moves, picking a random
 variation unless you choose one, so you can practise every variant. If you
 leave the book, it tells you which book moves were available; once the book
-runs out, the engine plays on its own.
+runs out, the engine plays on its own. Every move you make is rated by a
+full-strength engine (accuracy, grade and a plain-language comment), and the
+game can be saved as annotated PGN.
 
 Built with TypeScript and [Vite](https://vite.dev), tested with
 [Vitest](https://vitest.dev).
@@ -89,6 +91,17 @@ each quiz counts.
 - Outside the book, Stockfish plays with `UCI_LimitStrength` at the selected
   Elo, the range the engine is calibrated for. A separate engine instance is
   used, so games are never slowed by quiz preparation.
+- Your non-book moves are rated in the background by a third, full-strength
+  engine instance: a grade (best, good, inaccuracy ?!, mistake ?, blunder ??,
+  with the same thresholds as quizzes) and an accuracy percentage using the
+  formula Lichess publishes (based on the drop in winning chances). Book moves
+  are marked 📖 and not rated. The game accuracy is the mean over rated moves.
+- Each move gets a comment: whether it was book, where you left the book, what
+  it gave away, how the engine would answer, and the best line. Click one of
+  your moves to review it on the board, with arrows for your move (orange) and
+  the best move (green).
+- Copy PGN / Download PGN record the game with grades as NAGs ($6 ?!, $2 ?,
+  $4 ??) and short comments, for any chess program.
 - Games end on checkmate, stalemate, threefold repetition, the fifty-move rule,
   insufficient material, or resignation. Your win/draw/loss record and the
   chosen strength are kept in local storage.
@@ -105,6 +118,7 @@ each quiz counts.
 - `src/line-player.ts`: plays engine lines move by move on the board
 - `src/play.ts`: play mode logic: opening book, book move choice, results (UI-independent)
 - `src/play-view.ts`: play mode UI: game flow, take-back, resign, record
+- `src/review.ts`: move rating, accuracy, comments and PGN export (UI-independent)
 - `src/main.ts`: header and URL routing between the two modes
 - `scripts/copy-engine.mjs`: copies the Stockfish WASM build to `public/engine` (runs before `dev`/`build`)
 - `src/styles.css`: styles, including dark mode

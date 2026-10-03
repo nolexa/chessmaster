@@ -78,8 +78,18 @@ export function createLearnView(): LearnView {
   // ── Rendering ──────────────────────────────────────────────────────
   function renderSidebar(): void {
     const item = (o: Opening) => listItem(o.name, o.eco, o === state.opening, () => selectOpening(o));
+    const expanded = loadExpanded(state.side);
     $('openings').replaceChildren(
-      ...groupOpenings(state.side).flatMap((g) => [listHeading(g.label), ...g.openings.map(item)]),
+      ...groupOpenings(state.side).map((g) => {
+        // The group holding the selected opening is always open; others as the user left them.
+        const open = g.openings.includes(state.opening) || expanded.has(g.label);
+        return collapsibleGroup(g.label, g.openings.map(item), open, (isOpen) => {
+          const now = loadExpanded(state.side);
+          if (isOpen) now.add(g.label);
+          else now.delete(g.label);
+          saveExpanded(state.side, now);
+        });
+      }),
     );
 
     $('variations').replaceChildren(
@@ -265,9 +275,48 @@ export function listItem(label: string, meta: string, current: boolean, onClick:
   return li;
 }
 
-export function listHeading(label: string): HTMLLIElement {
+const EXPANDED_KEY = 'chessmaster.learn.expanded.v1';
+
+/** Opening groups the user has opened, per side (the selected opening's group is always open). */
+function loadExpanded(side: Color): Set<string> {
+  try {
+    const all = JSON.parse(localStorage.getItem(EXPANDED_KEY) ?? '{}') as Partial<Record<Color, string[]>>;
+    return new Set(all[side] ?? []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveExpanded(side: Color, labels: Set<string>): void {
+  try {
+    const all = JSON.parse(localStorage.getItem(EXPANDED_KEY) ?? '{}') as Partial<Record<Color, string[]>>;
+    all[side] = [...labels];
+    localStorage.setItem(EXPANDED_KEY, JSON.stringify(all));
+  } catch {
+    // Storage unavailable: groups just won't stay open across reloads.
+  }
+}
+
+/** A collapsible group of list items: "▸ 1.e4 · 6". */
+function collapsibleGroup(label: string, items: HTMLLIElement[], open: boolean, onToggle: (open: boolean) => void): HTMLLIElement {
   const li = document.createElement('li');
-  li.className = 'list-heading';
-  li.textContent = label;
+  li.className = 'list-group';
+  const details = document.createElement('details');
+  details.open = open;
+  const summary = document.createElement('summary');
+  const name = document.createElement('span');
+  name.textContent = label;
+  const count = document.createElement('span');
+  count.className = 'count';
+  count.textContent = String(items.length);
+  summary.append(name, count);
+  const list = document.createElement('ul');
+  list.className = 'list';
+  list.append(...items);
+  details.append(summary, list);
+  // Record only user clicks (also fired by Enter/Space): setting `open` while
+  // rendering fires 'toggle' too, which must not count as the user's choice.
+  summary.addEventListener('click', () => onToggle(!details.open));
+  li.append(details);
   return li;
 }

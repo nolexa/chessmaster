@@ -259,8 +259,9 @@ export function formatScore(cp: number): string {
     const n = Math.round((MATE - Math.abs(cp)) / 100);
     return `${cp < 0 ? '−' : ''}M${n}`;
   }
-  const pawns = (cp / 100).toFixed(1);
-  return cp > 0 ? `+${pawns}` : cp < 0 ? `−${pawns.slice(1)}` : '0.0';
+  const pawns = (Math.abs(cp) / 100).toFixed(1);
+  if (pawns === '0.0') return '0.0'; // no "−0.0" for tiny negatives
+  return cp > 0 ? `+${pawns}` : `−${pawns}`;
 }
 
 /** Book line before the deviation, with move numbers. */
@@ -323,35 +324,59 @@ export interface Explanation {
 }
 
 /** Explain a verdict in plain language. `bestSan` is the engine's top move, numbered. */
-export function explainVerdict(quiz: Quiz, verdict: Verdict, bestSan: string): Explanation {
-  const bestCp = scoreToCp(quiz.answers[0].score);
-  const { score, loss } = verdict;
+export interface MoveFacts {
+  grade: Grade;
+  /** Evaluation after the best move, and after the move played (centipawns, mover's view). */
+  bestCp: number;
+  scoreCp: number;
+  /** The move played and the best move, numbered ("5.h3", "5.d4"). */
+  played: string;
+  best: string;
+  /** Wording for the "good enough" margin: a quiz answer is "correct", a game move "good". */
+  context: 'quiz' | 'game';
+}
+
+/** Explain how good a move was, in plain language. */
+export function explainMove({ grade, bestCp, scoreCp, played, best, context }: MoveFacts): Explanation {
+  const loss = Math.max(0, bestCp - scoreCp);
   const margin = pawns(tolerance(bestCp));
-  const yours = `${moveNumber(quiz.position)}${verdict.move.san}`;
+  const counts = context === 'quiz' ? 'counts as correct here' : 'still counts as a good move';
 
   let meaning: string;
-  if (verdict.grade === 'best') {
+  if (grade === 'best') {
     meaning = 'This is the engine’s top choice.';
-  } else if (isMate(bestCp) && !isMate(score)) {
-    meaning = `You had a forced mate with ${bestSan} and missed it.`;
-  } else if (isMate(score) && score < 0) {
-    meaning = `This allows your opponent a forced mate. ${bestSan} was the right move.`;
-  } else if (verdict.grade === 'good') {
+  } else if (isMate(bestCp) && !isMate(scoreCp)) {
+    meaning = `You had a forced mate with ${best} and missed it.`;
+  } else if (isMate(scoreCp) && scoreCp < 0) {
+    meaning = `This allows your opponent a forced mate. ${best} was the right move.`;
+  } else if (grade === 'good') {
     meaning =
       bestCp >= DECISIVE && loss > tolerance(bestCp)
-        ? `You were already winning, and this move keeps a decisive advantage, so it counts as correct. ${bestSan} was even stronger.`
-        : `Practically as strong as the engine’s top choice ${bestSan}: the difference is ${pawns(loss)} pawns, inside the ${margin}-pawn margin that counts as correct here.`;
-  } else if (verdict.grade === 'inaccuracy') {
-    meaning = `Not a serious error, but ${bestSan} was more precise. You give up ${pawns(loss)} pawns of advantage, more than the ${margin}-pawn margin that counts as correct here.`;
+        ? `You were already winning, and this move keeps a decisive advantage. ${best} was even stronger.`
+        : `Practically as strong as the engine’s top choice ${best}: the difference is ${pawns(loss)} pawns, inside the ${margin}-pawn margin that ${counts}.`;
+  } else if (grade === 'inaccuracy') {
+    meaning = `Not a serious error, but ${best} was more precise. You give up ${pawns(loss)} pawns of advantage, more than the ${margin}-pawn margin that ${counts}.`;
   } else {
-    const severity = verdict.grade === 'mistake' ? 'A real error' : 'A serious error';
-    meaning = `${severity}: compared with ${bestSan}, it gives away ${pawns(loss)} pawns of advantage, ${materialEquivalent(loss)}.`;
+    const severity = grade === 'mistake' ? 'A real error' : 'A serious error';
+    meaning = `${severity}: compared with ${best}, it gives away ${pawns(loss)} pawns of advantage, ${materialEquivalent(loss)}.`;
   }
 
   const comparison =
-    verdict.grade === 'best'
-      ? `After ${yours}, ${describeEval(score)} (${formatScore(score)}).`
-      : `With the best move, ${describeEval(bestCp)} (${formatScore(bestCp)}). After ${yours}, ${describeEval(score)} (${formatScore(score)}).`;
+    grade === 'best'
+      ? `After ${played}, ${describeEval(scoreCp)} (${formatScore(scoreCp)}).`
+      : `With the best move, ${describeEval(bestCp)} (${formatScore(bestCp)}). After ${played}, ${describeEval(scoreCp)} (${formatScore(scoreCp)}).`;
 
   return { meaning, comparison };
+}
+
+/** Explain a quiz verdict in plain language. `bestSan` is the engine's top move, numbered. */
+export function explainVerdict(quiz: Quiz, verdict: Verdict, bestSan: string): Explanation {
+  return explainMove({
+    grade: verdict.grade,
+    bestCp: scoreToCp(quiz.answers[0].score),
+    scoreCp: verdict.score,
+    played: `${moveNumber(quiz.position)}${verdict.move.san}`,
+    best: bestSan,
+    context: 'quiz',
+  });
 }

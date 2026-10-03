@@ -95,6 +95,7 @@ describe('formatting', () => {
 
   it('formats scores in pawns and mates', () => {
     expect([123, -40, 0, 99_700, -99_800].map(formatScore)).toEqual(['+1.2', '−0.4', '0.0', 'M3', '−M2']);
+    expect([-4, 4].map(formatScore)).toEqual(['0.0', '0.0']); // never "−0.0"
   });
 });
 
